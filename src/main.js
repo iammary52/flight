@@ -1,3 +1,5 @@
+import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.module.js";
+
 const canvas = document.querySelector("#scene");
 const speedLabel = document.querySelector("#speedLabel");
 const altitudeLabel = document.querySelector("#altitudeLabel");
