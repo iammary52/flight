@@ -3,46 +3,46 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sky Drift</title>
+  <title>Sky Drift: Afterburn</title>
   <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
+  <canvas id="scene"></canvas>
+
   <div class="hud">
-    <div class="title-block">
-      <p class="eyebrow">Open Sky Explorer</p>
-      <h1>Sky Drift</h1>
-      <p class="subtitle">넓은 하늘과 바다 사이를 유영하듯 날아다니는 3D 비행 산책 게임</p>
+    <div class="topbar">
+      <div>
+        <p class="eyebrow">Sky Drift</p>
+        <h1>Afterburn</h1>
+      </div>
+      <div class="meters">
+        <span id="scoreLabel">Score 0</span>
+        <span id="speedLabel">Speed 0</span>
+        <span id="altitudeLabel">Altitude 0</span>
+        <span id="shieldLabel">Shield 100</span>
+        <span id="musicLabel">Music standby</span>
+      </div>
     </div>
 
-    <div class="panel">
-      <p><strong>조작</strong></p>
-      <p>방향키 좌/우: 방향 전환</p>
-      <p>방향키 위/아래: 상승 / 하강</p>
-      <p><kbd>Space</kbd>: 부스트</p>
-      <p><kbd>M</kbd>: 음악 켜기/끄기</p>
+    <div class="reticle" aria-hidden="true">
+      <span></span>
+      <i></i>
     </div>
 
-    <div class="panel">
-      <p><strong>플레이 감성</strong></p>
-      <p>미션이나 경쟁 없이 떠다니며 풍경을 즐기는 데 초점을 맞췄습니다.</p>
-      <p>구름층과 섬, 바다 위를 자유롭게 돌며 시원한 화면 흐름을 느껴보세요.</p>
-    </div>
-
-    <div class="status-bar">
-      <span id="speedLabel">Speed 0</span>
-      <span id="altitudeLabel">Altitude 0</span>
-      <span id="musicLabel">Music standby</span>
+    <div class="mission-strip">
+      <span>Fly</span>
+      <span>Chase drones</span>
+      <span>Fire with Z</span>
+      <span>Boost with Space</span>
     </div>
   </div>
 
-  <canvas id="scene"></canvas>
-
   <div class="overlay" id="startOverlay">
     <div class="overlay-card">
-      <p class="eyebrow">Sky Drift</p>
-      <h2>하늘을 산책해보세요</h2>
-      <p>클릭하면 시작됩니다. 음악은 브라우저에서 직접 생성됩니다.</p>
-      <button id="startButton">비행 시작</button>
+      <p class="eyebrow">Arcade Flight Upgrade</p>
+      <h2>Ready for takeoff</h2>
+      <p>Behind-the-plane camera, enemy drones, laser fire, pickups, and faster procedural music are now online.</p>
+      <button id="startButton">Start Flight</button>
     </div>
   </div>
 

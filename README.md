@@ -1,34 +1,41 @@
-# Sky Drift
+# Sky Drift: Afterburn
 
-탐험 중심의 3D 비행 시뮬레이터 데모입니다.
+Arcade-style 3D flight game built with static HTML, CSS, JavaScript, and Three.js.
 
-## 특징
+## What changed
 
-- 방향키로 조작하는 가벼운 비행 모델
-- 바다, 섬, 구름층이 있는 넓은 오픈 스카이 연출
-- 미션 없이 돌아다니는 데 집중한 플레이 흐름
-- 브라우저에서 직접 생성하는 잔잔한 배경 음악
+- Behind-the-plane flight camera for a more traditional flight-sim feel
+- Enemy drones that chase the player
+- Twin laser shots with `Z`
+- Score, shield, pickups, hit bursts, and drone explosions
+- Faster procedural browser music
+- Full-screen GitHub Pages friendly static deployment
 
-## 실행 방법
+## Controls
 
-정적 파일 서버로 실행하면 됩니다.
+- Arrow Left / Right: turn
+- Arrow Up / Down: climb / dive
+- `Space`: boost
+- `Z`: fire lasers
+- `M`: toggle music
 
-### PowerShell 예시
+## Run Locally
+
+Use any static file server from this directory.
 
 ```powershell
 cd D:\codex\game3_비행시뮬레이터
-python -m http.server 8000
+py -m http.server 8000
 ```
 
-브라우저에서 아래 주소를 열면 됩니다.
+Then open:
 
 ```text
 http://localhost:8000
 ```
 
-## 조작
+Live site:
 
-- 방향키 좌/우: 좌우 회전
-- 방향키 위/아래: 상승 / 하강
-- `Space`: 부스트
-- `M`: 음악 켜기/끄기
+```text
+https://iammary52.github.io/flight/
+```
