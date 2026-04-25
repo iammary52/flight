@@ -249,6 +249,7 @@ const game = {
 
 let musicSystem = null;
 let musicEnabled = false;
+let starting = false;
 
 function lerp(current, target, alpha) {
   return current + (target - current) * Math.min(alpha, 1);
@@ -264,25 +265,46 @@ function rightVector() {
 
 function createEnemy(position) {
   const group = new THREE.Group();
-  const body = new THREE.Mesh(
-    new THREE.OctahedronGeometry(3.2, 1),
-    new THREE.MeshStandardMaterial({ color: 0xff5a67, emissive: 0x66111a, emissiveIntensity: 0.35, roughness: 0.48 })
-  );
-  const wingA = new THREE.Mesh(
-    new THREE.BoxGeometry(1, 0.24, 9),
-    new THREE.MeshStandardMaterial({ color: 0x2b4054, roughness: 0.5, metalness: 0.22 })
-  );
-  const glow = new THREE.Mesh(
-    new THREE.SphereGeometry(1.2, 14, 14),
-    new THREE.MeshBasicMaterial({ color: 0xffd15a, transparent: true, opacity: 0.75 })
-  );
-  glow.position.x = -2.8;
-  group.add(body, wingA, glow);
+
+  const skin = new THREE.MeshStandardMaterial({ color: 0xffd46b, roughness: 0.75 });
+  const red = new THREE.MeshStandardMaterial({ color: 0xe6463d, roughness: 0.62 });
+  const shoe = new THREE.MeshStandardMaterial({ color: 0x603828, roughness: 0.72 });
+  const white = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.45 });
+  const black = new THREE.MeshBasicMaterial({ color: 0x1f1f24 });
+  const blue = new THREE.MeshStandardMaterial({ color: 0x2777d7, roughness: 0.58 });
+
+  const head = new THREE.Mesh(new THREE.SphereGeometry(3.2, 24, 20), skin);
+  const cap = new THREE.Mesh(new THREE.SphereGeometry(3.35, 24, 12, 0, Math.PI * 2, 0, Math.PI * 0.52), red);
+  const brim = new THREE.Mesh(new THREE.BoxGeometry(3.7, 0.45, 1.35), red);
+  const body = new THREE.Mesh(new THREE.SphereGeometry(2.7, 18, 16), blue);
+  const nose = new THREE.Mesh(new THREE.SphereGeometry(0.68, 14, 12), skin);
+  const eyeLeft = new THREE.Mesh(new THREE.SphereGeometry(0.32, 10, 8), black);
+  const eyeRight = eyeLeft.clone();
+  const gloveLeft = new THREE.Mesh(new THREE.SphereGeometry(0.95, 14, 10), white);
+  const gloveRight = gloveLeft.clone();
+  const shoeLeft = new THREE.Mesh(new THREE.BoxGeometry(1.45, 0.75, 2.1), shoe);
+  const shoeRight = shoeLeft.clone();
+
+  cap.position.y = 2.25;
+  brim.position.set(2.25, 2.2, 0);
+  body.position.y = -3.35;
+  body.scale.set(0.92, 1.05, 0.92);
+  nose.position.set(2.9, 0.1, 0);
+  eyeLeft.position.set(2.55, 0.8, -0.82);
+  eyeRight.position.set(2.55, 0.8, 0.82);
+  gloveLeft.position.set(0.2, -3.1, -3.0);
+  gloveRight.position.set(0.2, -3.1, 3.0);
+  shoeLeft.position.set(-0.45, -5.95, -1.2);
+  shoeRight.position.set(-0.45, -5.95, 1.2);
+
+  group.add(head, cap, brim, body, nose, eyeLeft, eyeRight, gloveLeft, gloveRight, shoeLeft, shoeRight);
+  group.scale.setScalar(0.72);
   group.position.copy(position);
   group.userData = {
     velocity: new THREE.Vector3(),
     wobble: Math.random() * 10,
     health: 2,
+    bobBase: Math.random() * Math.PI * 2,
   };
   enemyGroup.add(group);
   game.enemies.push(group);
@@ -349,85 +371,74 @@ function burst(position, color = 0xffd15a) {
 }
 
 function createMusicSystem() {
-  const audioContext = new window.AudioContext();
+  const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContextClass) {
+    throw new Error("Web Audio is not supported in this browser.");
+  }
+
+  const audioContext = new AudioContextClass();
   const master = audioContext.createGain();
   master.gain.value = 0.0001;
   master.connect(audioContext.destination);
 
-  const filter = audioContext.createBiquadFilter();
-  filter.type = "lowpass";
-  filter.frequency.value = 2600;
-  filter.Q.value = 0.6;
-  filter.connect(master);
+  const melodyGain = audioContext.createGain();
+  const bassGain = audioContext.createGain();
+  const drumGain = audioContext.createGain();
+  melodyGain.gain.value = 0.16;
+  bassGain.gain.value = 0.12;
+  drumGain.gain.value = 0.08;
+  melodyGain.connect(master);
+  bassGain.connect(master);
+  drumGain.connect(master);
 
-  const delay = audioContext.createDelay();
-  const delayGain = audioContext.createGain();
-  delay.delayTime.value = 0.22;
-  delayGain.gain.value = 0.16;
-  delay.connect(delayGain);
-  delayGain.connect(filter);
+  const melody = [523.25, 659.25, 783.99, 659.25, 587.33, 698.46, 880.0, 783.99];
+  const bass = [130.81, 130.81, 174.61, 196.0];
+  const startAt = audioContext.currentTime + 0.04;
+  const step = 0.18;
+  let tick = 0;
 
-  const mix = audioContext.createGain();
-  mix.gain.value = 0.42;
-  mix.connect(filter);
-  mix.connect(delay);
-
-  const scale = [261.63, 293.66, 329.63, 392.0, 440.0, 523.25, 587.33, 659.25];
-  const bass = [65.41, 82.41, 98.0, 110.0];
-
-  function tone(type, freq, time, length, gain, destination = mix) {
+  function tone(type, freq, time, length, gain, destination) {
     const osc = audioContext.createOscillator();
     const env = audioContext.createGain();
     osc.type = type;
     osc.frequency.setValueAtTime(freq, time);
     env.gain.setValueAtTime(0.0001, time);
-    env.gain.linearRampToValueAtTime(gain, time + 0.025);
+    env.gain.linearRampToValueAtTime(gain, time + 0.018);
     env.gain.exponentialRampToValueAtTime(0.0001, time + length);
     osc.connect(env);
     env.connect(destination);
     osc.start(time);
-    osc.stop(time + length + 0.04);
+    osc.stop(time + length + 0.03);
   }
 
-  function noise(time, length, gain) {
-    const buffer = audioContext.createBuffer(1, audioContext.sampleRate * length, audioContext.sampleRate);
-    const data = buffer.getChannelData(0);
-    for (let i = 0; i < data.length; i += 1) data[i] = Math.random() * 2 - 1;
-    const source = audioContext.createBufferSource();
+  function blip(time, gain) {
+    const osc = audioContext.createOscillator();
     const env = audioContext.createGain();
-    const highpass = audioContext.createBiquadFilter();
-    highpass.type = "highpass";
-    highpass.frequency.value = 4200;
-    source.buffer = buffer;
+    osc.type = "square";
+    osc.frequency.setValueAtTime(90, time);
+    osc.frequency.exponentialRampToValueAtTime(46, time + 0.08);
     env.gain.setValueAtTime(gain, time);
-    env.gain.exponentialRampToValueAtTime(0.0001, time + length);
-    source.connect(highpass);
-    highpass.connect(env);
-    env.connect(mix);
-    source.start(time);
-    source.stop(time + length);
+    env.gain.exponentialRampToValueAtTime(0.0001, time + 0.09);
+    osc.connect(env);
+    env.connect(drumGain);
+    osc.start(time);
+    osc.stop(time + 0.1);
   }
 
-  function scheduleLoop(startAt) {
-    const step = 0.18;
-    for (let i = 0; i < 64; i += 1) {
-      const time = startAt + i * step;
-      if (i % 4 === 0) tone("sine", bass[Math.floor(i / 16) % bass.length], time, 0.16, 0.09);
-      if (i % 4 === 2) tone("triangle", bass[Math.floor(i / 16) % bass.length] * 2, time, 0.12, 0.04);
-      if (i % 2 === 1) noise(time, 0.045, 0.035);
-      if (i % 8 === 0) tone("sawtooth", scale[(i / 8) % scale.length], time, 0.28, 0.035);
-      if (i % 8 === 5) tone("square", scale[(i / 8 + 3) % scale.length] * 2, time, 0.12, 0.018);
+  function scheduleUntil(horizon) {
+    while (startAt + tick * step < horizon) {
+      const time = startAt + tick * step;
+      if (tick % 2 === 0) tone("square", melody[(tick / 2) % melody.length], time, 0.11, 0.05, melodyGain);
+      if (tick % 4 === 0) tone("triangle", bass[(tick / 4) % bass.length], time, 0.18, 0.08, bassGain);
+      if (tick % 4 === 0 || tick % 4 === 2) blip(time, tick % 8 === 0 ? 0.12 : 0.055);
+      tick += 1;
     }
   }
 
-  let nextTime = audioContext.currentTime + 0.1;
-  scheduleLoop(nextTime);
+  scheduleUntil(audioContext.currentTime + 1.8);
   const scheduler = window.setInterval(() => {
-    if (audioContext.currentTime + 4 > nextTime) {
-      nextTime += 11.52;
-      scheduleLoop(nextTime);
-    }
-  }, 700);
+    scheduleUntil(audioContext.currentTime + 1.8);
+  }, 450);
 
   return {
     audioContext,
@@ -435,13 +446,16 @@ function createMusicSystem() {
     setEnabled(enabled) {
       musicEnabled = enabled;
       master.gain.cancelScheduledValues(audioContext.currentTime);
-      master.gain.linearRampToValueAtTime(enabled ? 0.22 : 0.0001, audioContext.currentTime + 0.35);
+      master.gain.setValueAtTime(master.gain.value, audioContext.currentTime);
+      master.gain.linearRampToValueAtTime(enabled ? 0.32 : 0.0001, audioContext.currentTime + 0.18);
       musicLabel.textContent = enabled ? "Music on" : "Music muted";
     },
   };
 }
 
 async function startExperience() {
+  if (starting) return;
+  starting = true;
   startOverlay.classList.add("hidden");
 
   try {
@@ -449,7 +463,7 @@ async function startExperience() {
     if (musicSystem.audioContext.state === "suspended") await musicSystem.audioContext.resume();
     musicSystem.setEnabled(true);
   } catch (error) {
-    musicLabel.textContent = "Music blocked";
+    musicLabel.textContent = "Music unavailable";
     console.warn("Audio start failed; continuing without music.", error);
   }
 
@@ -457,6 +471,8 @@ async function startExperience() {
     seedActionObjects();
     game.started = true;
   }
+
+  starting = false;
 }
 
 startButton.addEventListener("click", (event) => {
