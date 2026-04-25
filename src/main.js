@@ -442,17 +442,32 @@ function createMusicSystem() {
 }
 
 async function startExperience() {
-  if (!musicSystem) musicSystem = createMusicSystem();
-  if (musicSystem.audioContext.state === "suspended") await musicSystem.audioContext.resume();
-  musicSystem.setEnabled(true);
+  startOverlay.classList.add("hidden");
+
+  try {
+    if (!musicSystem) musicSystem = createMusicSystem();
+    if (musicSystem.audioContext.state === "suspended") await musicSystem.audioContext.resume();
+    musicSystem.setEnabled(true);
+  } catch (error) {
+    musicLabel.textContent = "Music blocked";
+    console.warn("Audio start failed; continuing without music.", error);
+  }
+
   if (!game.started) {
     seedActionObjects();
     game.started = true;
   }
-  startOverlay.classList.add("hidden");
 }
 
-startButton.addEventListener("click", startExperience);
+startButton.addEventListener("click", (event) => {
+  event.preventDefault();
+  startExperience();
+});
+
+startButton.addEventListener("pointerup", (event) => {
+  event.preventDefault();
+  startExperience();
+});
 
 window.addEventListener("keydown", (event) => {
   if (event.code in controls) {
